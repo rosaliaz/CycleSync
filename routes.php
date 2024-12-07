@@ -4,14 +4,17 @@
     require_once "./modules/Get.php";
     require_once "./modules/Post.php";
     require_once "./modules/Patch.php";
+    require_once "./modules/Delete.php";
 
     $db = new Connection();
     $pdo = $db->connect();
 
     // instantitate post, get class
     $post = new Post($pdo);
-    $get = new Get($pdo);
     $patch = new Patch($pdo);
+    $get = new Get($pdo);
+    $delete = new Delete($pdo);
+    
 
     if(isset($_REQUEST['request'])){
         $request = explode("/", $_REQUEST['request']);
@@ -75,9 +78,22 @@
                 break;
 
                 case "account":
-                    echo json_encode($patch->patchAccounts($body, $request[1]));
+                    echo json_encode($patch->patchAccounts($body,$request[1]));
                 break;
-            }   
+
+            }
+        break;
+
+        case "DELETE":
+            switch($request[0]){
+                case "cycle":
+                    echo json_encode($patch->archiveCycle($request[1]));
+                break;
+
+                case "destroycycle":
+                    echo json_encode($delete->deleteCycle($request[1]));
+                break;
+            }
         break;
 
     default:
@@ -85,5 +101,4 @@
         echo "Invalid Request Method.";
     break;
 }
-
 ?>

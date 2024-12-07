@@ -7,10 +7,10 @@ Class Get{
     }
 
     public function getCycle($id = null){
-        $sqlString = "SELECT * FROM cycle_tbl";
+        $sqlString = "SELECT * FROM cycle_tbl WHERE isDeleted=0";
 
         if($id != null){
-            $sqlString .= " WHERE cycleid=" . $id;
+            $sqlString .= " AND cycleid=" . $id;
         }
         $data = array();
         $errmsg = "";

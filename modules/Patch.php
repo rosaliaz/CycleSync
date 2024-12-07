@@ -19,7 +19,7 @@ class Patch{
         array_push($values, $id);
 
         try{
-            $sqlString = "UPDATE accounts SET userid=?, userName=?, email=?, password=?, token=? WHERE userid=?";
+            $sqlString = "UPDATE accounts SET userName=?, email=?, password=?, token=? WHERE userid=?";
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute($values);
 
@@ -48,7 +48,7 @@ class Patch{
         array_push($values, $id);
 
         try{
-            $sqlString = "UPDATE cycle_tbl SET startDate=?, endDate=?, cycleLength=?, flowIntensity=?, painLevel=? WHERE cycleid=?";
+            $sqlString = "UPDATE cycle_tbl SET startDate=?, endDate=?, cycleLength=?, flowIntensity=?, painLevel=? WHERE cycleid = ?";
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute($values);
 
@@ -64,5 +64,28 @@ class Patch{
 
         return array("errmsg"=>$errmsg, "code"=>$code);
     }
+
+    public function archiveCycle($id){
+        $errmsg = "";
+        $code = 0;
+
+        try{
+            $sqlString = "UPDATE cycle_tbl SET isDeleted=1 WHERE cycleid = ?";
+            $sql = $this->pdo->prepare($sqlString);
+            $sql->execute([$id]);
+
+            $code = 200;
+            $data = null;
+
+            return array("data"=>$data, "code"=>$code);
+        }
+        catch (\PDOException $e){
+            $errmsg = $e->getMessage();
+            $code = 400;
+        }
+
+        return array("errmsg"=>$errmsg, "code"=>$code);
+    }
+    
 }
 ?>
