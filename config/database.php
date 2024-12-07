@@ -1,4 +1,5 @@
 <?php
+    //meta data
     header("Access-Control-Allow-Origin: *");
     header("Content-Type: application/json; charset=utf-8");
     header("Access-Control-Allow-Methods: POST, GET, PATCH");
@@ -9,10 +10,9 @@
     define("DATABASE", "cycle_sync");
     define("USER", "root");
     define("PASSWORD", "");
-    define("TOKEN_KEY", ""); // hindi pa nalalagyan
 
     class Connection{
-        protected $connectionString = "mysql:host" . SERVER . ";dbname=" .DATABASE. ";charset=utf8";
+        protected $connectionString = "mysql:host=" . SERVER . ";dbname=" .DATABASE. ";charset=utf8";
         protected $options = [
             \PDO::ATTR_ERRMODE =>\PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
