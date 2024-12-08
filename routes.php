@@ -92,13 +92,13 @@
                 case "account":
                     echo json_encode($patch->patchAccounts($body, $request[1]));
                 break;
-            }   
-        break;
 
-    default:
-        http_response_code(400);
-        echo "Invalid Request Method.";
-    break;
+            default:
+                http_response_code(400);
+                echo "Invalid Request Method.";
+            break;
+        }
+        break;
 
     case "DELETE":
         switch($request[0]){
@@ -109,13 +109,13 @@
             case "destroycycle":
                 echo json_encode($delete->deleteCycle($request[1]));
             break;
-        }
-    break;
 
-default:
-    http_response_code(400);
-    echo "Invalid Request Method.";
-break;
+            default:
+                http_response_code(400);
+                echo "Invalid Request Method.";
+            break;
+        }
+        break;
 }
 
 ?>
