@@ -10,6 +10,7 @@
     define("DATABASE", "cycle_sync");
     define("USER", "root");
     define("PASSWORD", "");
+    define("TOKEN_KEY", "5JEU3LIN1NA4ROL61SY8EN4");
 
     class Connection{
         protected $connectionString = "mysql:host=" . SERVER . ";dbname=" .DATABASE. ";charset=utf8";
