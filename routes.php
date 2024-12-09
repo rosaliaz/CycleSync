@@ -40,6 +40,33 @@
                     }
                 break;
 
+                case "ovulation":
+                    if (count($request)>1){
+                        echo json_encode($get->getOvulation($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getOvulation());
+                    }
+                break;
+
+                case "symptoms":
+                    if (count($request)>1){
+                        echo json_encode($get->getSymptom($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getSymptom());
+                    }
+                break;
+
+                case "health":
+                    if(count($request)>1){
+                        echo json_encode($get->getHealth($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getHealth());
+                    }
+                break;
+
                 case "account":
                     if (count($request)>1){
                         echo json_encode($get->getAccount($request[1]));
@@ -60,7 +87,7 @@
         }
         break;
 
-        case "POST":
+       /* case "POST":
             $body = json_decode(file_get_contents("php://input"));
             switch($request[0]){
                 case "login":
@@ -96,7 +123,55 @@
                     echo "This is invalid endpoint";
                 break;
             }
-        break;
+        break;*/
+
+        case "POST":
+            $body = json_decode(file_get_contents("php://input"));
+            
+            // Exempt the "login" endpoint from authorization
+            if ($request[0] === "login") {
+                echo json_encode($auth->login($body));
+                break;
+            }
+            
+            // Check authorization for all other POST endpoints
+            if ($auth->isAuthorized()) {
+                switch ($request[0]) {
+                    case "account":
+                        echo json_encode($auth->addAccounts($body));
+                        break;
+        
+                    case "cycle":
+                        echo json_encode($post->postCycle($body));
+                        break;
+        
+                    case "ovulation":
+                        echo json_encode($post->postOvulation($body));
+                        break;
+        
+                    case "symptoms":
+                        echo json_encode($post->postSymptom($body));
+                        break;
+        
+                    case "health":
+                        echo json_encode($post->postHealth($body));
+                        break;
+        
+                    case "notification":
+                        echo json_encode($post->postNotification($body));
+                        break;
+        
+                    default:
+                        http_response_code(400);
+                        echo json_encode(["error" => "Invalid endpoint."]);
+                        break;
+                }
+            } else {
+                http_response_code(401);
+                echo json_encode(["error" => "Unauthorized"]);
+            }
+            break;
+        
 
         case "PATCH":
             $body = json_decode(file_get_contents("php://input"));
