@@ -15,7 +15,7 @@ class Authentication{
     private function getToken(){
         $headers = array_change_key_case(getallheaders(),CASE_LOWER);
 
-        $sqlString = "SELECT token FROM accounts WHERE username=?";
+        $sqlString = "SELECT token FROM accounts WHERE userName=?";
         try{
             $stmt = $this->pdo->prepare($sqlString);
             $stmt->execute([$headers['x-auth-user']]);
@@ -34,7 +34,7 @@ class Authentication{
         $code = 0;
         
         try{
-            $sqlString = "UPDATE accounts SET token=? WHERE username = ?";
+            $sqlString = "UPDATE accounts SET token=? WHERE userName = ?";
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute( [$token, $username] );
 
@@ -160,7 +160,7 @@ class Authentication{
         }
 
         try{
-            $sqlString = "INSERT INTO accounts(userId,userName, email, password) VALUES (?,?,?,?)";
+            $sqlString = "INSERT INTO accounts(userName, email, password) VALUES (?,?,?)";
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute($values);
 
