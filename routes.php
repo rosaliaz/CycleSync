@@ -66,13 +66,29 @@
                 case "login":
                     echo json_encode($auth->login($body));
                 break;
+                
+                case "account":
+                    echo json_encode($auth->addAccounts($body));
+                break;
 
                 case "cycle":
                     echo json_encode($post->postCycle($body));
                 break;
 
-                case "account":
-                    echo json_encode($auth->addAccounts($body));
+                case "ovulation":
+                    echo json_encode($post->postOvulation($body));
+                break;
+
+                case "symptoms":
+                    echo json_encode($post->postSymptom($body));
+                break;
+
+                case "health":
+                    echo json_encode($post->postHealth($body));
+                break;
+
+                case "notification":
+                    echo json_encode($post->postNotification($body));
                 break;
 
                 default:
