@@ -76,7 +76,7 @@ Class Get{
         $sqlString = "SELECT * FROM ovulation_tbl";
 
         if($id != null){
-            $sql .= "WHERE ovulationId = " .$id;
+            $sqlString .= "WHERE ovulationId = " .$id;
         }
         $data = array();
         $errmsg = "";
@@ -107,7 +107,7 @@ Class Get{
         $sqlString = "SELECT * FROM symptom_tbl";
 
         if($id != null){
-            $sql .= "WHERE symptomId = " .$id;
+            $sqlString .= "WHERE symptomId = " .$id;
         }
         $data = array();
         $errmsg = "";
@@ -138,7 +138,7 @@ Class Get{
         $sqlString = "SELECT * FROM health_metric";
 
         if($id != null){
-            $sql .= "WHERE health_metric = " .$id;
+            $sqlString .= "WHERE health_metric = " .$id;
         }
         $data = array();
         $errmsg = "";
@@ -165,6 +165,36 @@ Class Get{
         return array("code"=>$code, "errmsg"=>$errmsg);
      }
 
+     public function getNotification($id = null){
+        $sqlString = "SELECT * FROM notification_tbl";
+
+        if($id != null){
+            $sqlString .= "WHERE notification_tbl= " .$id;
+        }
+        $data = array();
+        $errmsg = "";
+        $code = 0;
+
+        try{
+            if($result = $this->pdo->query($sqlString)->fetchAll()){
+                foreach($result as $record){
+                    array_push($data, $record);
+                }
+                $result = null;
+                $code = 200;
+                return array("code"=>$code, "data"=>$data);
+            }
+            else{
+                $errmsg = "No data found.";
+                $code = 403;
+            }
+         }
+         catch(\PDOException $e){
+            $errmsg = $e->getMessage();
+            $code = 403;
+        }
+        return array("code"=>$code, "errmsg"=>$errmsg);
+     }
      
 }
 ?>
