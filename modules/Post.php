@@ -44,7 +44,7 @@ class Post{
         }
 
         try{
-            $sqlString = "INSERT INTO ovulation_tbl(ovulationId, userId, cycleId, windowStart, windowEnd, predictedDate, actualDate) VALUE (?,?,?,?,?,?,?)";
+            $sqlString = "INSERT INTO ovulation_tbl(ovulationId, userId, cycleId, fertile_window_start, ovulationDate, next_fertile_start, predicted_ovulation_date) VALUE (?,?,?,?,?,?,?)";
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute($values);
 
@@ -70,7 +70,7 @@ class Post{
         }
 
         try{
-            $sqlString = "INSERT INTO symptom_tbl(symptomId, userId, Date, type, severity) VALUE (?,?,?,?,?)";
+            $sqlString = "INSERT INTO symptom_tbl(symptomId, userId, data_log, symptomType, severity) VALUE (?,?,?,?,?)";
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute($values);
 
