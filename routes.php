@@ -5,15 +5,17 @@
     require_once "./modules/Post.php";
     require_once "./modules/Patch.php";
     require_once "./modules/Delete.php";
+    require_once "./modules/Auth.php";
 
     $db = new Connection();
     $pdo = $db->connect();
 
     // instantitate post, get class
     $post = new Post($pdo);
-    $patch = new Patch($pdo);
     $get = new Get($pdo);
+    $patch = new Patch($pdo);
     $delete = new Delete($pdo);
+    $auth = new Authentication($pdo);
     
 
     if(isset($_REQUEST['request'])){
@@ -26,13 +28,42 @@
     switch($_SERVER['REQUEST_METHOD']){
 
         case "GET":
+            if($auth->isAuthorized()){
             switch($request[0]){
+
                 case "cycle":
                     if (count($request)>1){
                         echo json_encode($get->getCycle($request[1]));
                     }
                     else{
                         echo json_encode($get->getCycle());
+                    }
+                break;
+
+                case "ovulation":
+                    if (count($request)>1){
+                        echo json_encode($get->getOvulation($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getOvulation());
+                    }
+                break;
+
+                case "symptoms":
+                    if (count($request)>1){
+                        echo json_encode($get->getSymptom($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getSymptom());
+                    }
+                break;
+
+                case "health":
+                    if(count($request)>1){
+                        echo json_encode($get->getHealthMetric($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getHealthMetric());
                     }
                 break;
 
@@ -45,22 +76,50 @@
                     }
                 break;
 
+                case "log":
+                    echo json_encode($get->getLogs($request[1]));
+                break;
+
                 default:
                     http_response_code(400);
                     echo "Invalid Request Method.";
                 break;
             }
+        }
+        else{
+            http_response_code(401);
+        }
         break;
 
-        case "POST":
+       /* case "POST":
             $body = json_decode(file_get_contents("php://input"));
             switch($request[0]){
+                case "login":
+                    echo json_encode($auth->login($body));
+                break;
+                
+                case "account":
+                    echo json_encode($auth->addAccounts($body));
+                break;
+
                 case "cycle":
                     echo json_encode($post->postCycle($body));
                 break;
 
-                case "account":
-                    echo json_encode($post->postAccounts($body));
+                case "ovulation":
+                    echo json_encode($post->postOvulation($body));
+                break;
+
+                case "symptoms":
+                    echo json_encode($post->postSymptom($body));
+                break;
+
+                case "health":
+                    echo json_encode($post->postHealth($body));
+                break;
+
+                case "notification":
+                    echo json_encode($post->postNotification($body));
                 break;
 
                 default:
@@ -68,7 +127,55 @@
                     echo "This is invalid endpoint";
                 break;
             }
-        break;
+        break;*/
+
+        case "POST":
+            $body = json_decode(file_get_contents("php://input"), true);
+            
+            // Exempt the "login" endpoint from authorization
+            if ($request[0] === "login") {
+                echo json_encode($auth->login($body));
+                break;
+            }
+            
+            // Check authorization for all other POST endpoints
+            if ($auth->isAuthorized()) {
+                switch ($request[0]) {
+                    case "account":
+                        echo json_encode($auth->addAccounts($body));
+                        break;
+        
+                    case "cycle":
+                        echo json_encode($post->postCycle($body));
+                        break;
+        
+                    case "ovulation":
+                        echo json_encode($post->postOvulation($body));
+                        break;
+        
+                    case "symptoms":
+                        echo json_encode($post->postSymptom($body));
+                        break;
+        
+                    case "health":
+                        echo json_encode($post->postHealth($body));
+                        break;
+        
+                    case "notification":
+                        echo json_encode($post->postNotification($body));
+                        break;
+        
+                    default:
+                        http_response_code(400);
+                        echo json_encode(["error" => "Invalid endpoint."]);
+                        break;
+                }
+            } else {
+                http_response_code(401);
+                echo json_encode(["error" => "Unauthorized"]);
+            }
+            break;
+        
 
         case "PATCH":
             $body = json_decode(file_get_contents("php://input"));
@@ -78,27 +185,32 @@
                 break;
 
                 case "account":
-                    echo json_encode($patch->patchAccounts($body,$request[1]));
+                    echo json_encode($patch->patchAccounts($body, $request[1]));
                 break;
 
-            }
+            default:
+                http_response_code(400);
+                echo "Invalid Request Method.";
+            break;
+        }
         break;
 
-        case "DELETE":
-            switch($request[0]){
-                case "cycle":
-                    echo json_encode($patch->archiveCycle($request[1]));
-                break;
+    case "DELETE":
+        switch($request[0]){
+            case "cycle":
+                echo json_encode($patch->archiveCycle($request[1]));
+            break;
 
-                case "destroycycle":
-                    echo json_encode($delete->deleteCycle($request[1]));
-                break;
-            }
+            case "destroycycle":
+                echo json_encode($delete->deleteCycle($request[1]));
+            break;
+
+            default:
+                http_response_code(400);
+                echo "Invalid Request Method.";
+            break;
+        }
         break;
-
-    default:
-        http_response_code(400);
-        echo "Invalid Request Method.";
-    break;
 }
+
 ?>
