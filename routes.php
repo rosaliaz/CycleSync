@@ -60,10 +60,10 @@
 
                 case "health":
                     if(count($request)>1){
-                        echo json_encode($get->getHealth($request[1]));
+                        echo json_encode($get->getHealthMetric($request[1]));
                     }
                     else{
-                        echo json_encode($get->getHealth());
+                        echo json_encode($get->getHealthMetric());
                     }
                 break;
 
@@ -74,6 +74,10 @@
                     else{
                         echo json_encode($get->getAccount());
                     }
+                break;
+
+                case "log":
+                    echo json_encode($get->getLogs($request[1]));
                 break;
 
                 default:
@@ -126,7 +130,7 @@
         break;*/
 
         case "POST":
-            $body = json_decode(file_get_contents("php://input"));
+            $body = json_decode(file_get_contents("php://input"), true);
             
             // Exempt the "login" endpoint from authorization
             if ($request[0] === "login") {
