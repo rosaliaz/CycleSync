@@ -133,18 +133,22 @@
             $body = json_decode(file_get_contents("php://input"), true);
             
             // Exempt the "login" endpoint from authorization
-            if ($request[0] === "login") {
-                echo json_encode($auth->login($body));
+            if (in_array($request[0], ["login", "account"])) {
+                switch ($request[0]) {
+                    case "login":
+                        echo json_encode($auth->login($body));
+                        break;
+        
+                    case "account":
+                        echo json_encode($auth->addAccounts($body));
+                        break;
+                }
                 break;
             }
             
             // Check authorization for all other POST endpoints
             if ($auth->isAuthorized()) {
                 switch ($request[0]) {
-                    case "account":
-                        echo json_encode($auth->addAccounts($body));
-                        break;
-        
                     case "cycle":
                         echo json_encode($post->postCycle($body));
                         break;

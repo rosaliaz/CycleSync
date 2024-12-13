@@ -48,7 +48,7 @@ class Patch{
         array_push($values, $id);
 
         try{
-            $sqlString = "UPDATE cycle_tbl SET startDate=?, endDate=?, cycleLength=?, flowIntensity=?, painLevel=? WHERE cycleid = ?";
+            $sqlString = "UPDATE cycle_tbl SET startDate=?, endDate=?, cycleLength=?, flowIntensity=? WHERE cycleid = ?";
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute($values);
 
