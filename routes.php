@@ -76,10 +76,19 @@
                     }
                 break;
 
+                case "notifications":
+                    if (count($request)>1){
+                        echo json_encode($get->getNotification($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getNotification());
+                    }
+                break;
+                
                 case "log":
                     echo json_encode($get->getLogs($request[1]));
                 break;
-
+                
                 default:
                     http_response_code(400);
                     echo "Invalid Request Method.";
@@ -90,44 +99,6 @@
             http_response_code(401);
         }
         break;
-
-       /* case "POST":
-            $body = json_decode(file_get_contents("php://input"));
-            switch($request[0]){
-                case "login":
-                    echo json_encode($auth->login($body));
-                break;
-                
-                case "account":
-                    echo json_encode($auth->addAccounts($body));
-                break;
-
-                case "cycle":
-                    echo json_encode($post->postCycle($body));
-                break;
-
-                case "ovulation":
-                    echo json_encode($post->postOvulation($body));
-                break;
-
-                case "symptoms":
-                    echo json_encode($post->postSymptom($body));
-                break;
-
-                case "health":
-                    echo json_encode($post->postHealth($body));
-                break;
-
-                case "notification":
-                    echo json_encode($post->postNotification($body));
-                break;
-
-                default:
-                    http_response_code(401);
-                    echo "This is invalid endpoint";
-                break;
-            }
-        break;*/
 
         case "POST":
             $body = json_decode(file_get_contents("php://input"), true);
@@ -149,12 +120,9 @@
             // Check authorization for all other POST endpoints
             if ($auth->isAuthorized()) {
                 switch ($request[0]) {
-                    case "cycle":
-                        echo json_encode($post->postCycle($body));
-                        break;
-        
-                    case "ovulation":
-                        echo json_encode($post->postOvulation($body));
+                    
+                    case "monthly_cycle":
+                        echo json_encode($post->postCycleAndOvulation($body));
                         break;
         
                     case "symptoms":
