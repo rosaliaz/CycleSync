@@ -67,96 +67,51 @@ Class Get extends Common{
     }
 
     public function getSymptom($id = null){
-        $sqlString = "SELECT * FROM symptom_tbl";
+        $condition = "1=1";
+        if ($id != null) {
+            $condition = "symptomId = $id";
+        }
+        $result = $this->getDataByTable("symptom_tbl", $condition, $this->pdo);
 
-        if($id != null){
-            $sqlString .= "WHERE symptomId = " .$id;
-        }
-        $data = array();
-        $errmsg = "";
-        $code = 0;
+        // Logging the action
+        $this->logger($this->user, 'GET', $id ? "Retrieve symptom $id" : "Retrieve all symptoms");
 
-        try{
-            if($result = $this->pdo->query($sqlString)->fetchAll()){
-                foreach($result as $record){
-                    array_push($data, $record);
-                }
-                $result = null;
-                $code = 200;
-                return array("code"=>$code, "data"=>$data);
-            }
-            else{
-                $errmsg = "No data found.";
-                $code = 403;
-            }
+        if ($result['code'] == 200) {
+            return $this->generateResponse($result['data'], "Successfully retrieved records", "success", $result['code']);
         }
-        catch(\PDOException $e){
-            $errmsg = $e->getMessage();
-            $code = 403;
-        }
-        return array("code"=>$code, "errmsg"=>$errmsg);
+        return $this->generateResponse(null, $result['errmsg'], "failed", $result['code']);
     }
 
     public function getHealthMetric($id = null){
-        $sqlString = "SELECT * FROM health_metric";
-
-        if($id != null){
-            $sqlString .= "WHERE health_metric = " .$id;
+        $condition = "1=1";
+        if ($id != null) {
+            $condition = "metricId = $id";
         }
-        $data = array();
-        $errmsg = "";
-        $code = 0;
+        $result = $this->getDataByTable("health_metric", $condition, $this->pdo);
 
-        try{
-            if($result = $this->pdo->query($sqlString)->fetchAll()){
-                foreach($result as $record){
-                    array_push($data, $record);
-                }
-                $result = null;
-                $code = 200;
-                return array("code"=>$code, "data"=>$data);
-            }
-            else{
-                $errmsg = "No data found.";
-                $code = 403;
-            }
-         }
-         catch(\PDOException $e){
-            $errmsg = $e->getMessage();
-            $code = 403;
+        // Logging the action
+        $this->logger($this->user, 'GET', $id ? "Retrieve health metric $id" : "Retrieve all health metrics");
+
+        if ($result['code'] == 200) {
+            return $this->generateResponse($result['data'], "Successfully retrieved records", "success", $result['code']);
         }
-        return array("code"=>$code, "errmsg"=>$errmsg);
+        return $this->generateResponse(null, $result['errmsg'], "failed", $result['code']);
      }
 
      public function getNotification($id = null){
-        $sqlString = "SELECT * FROM notification_tbl";
-
-        if($id != null){
-            $sqlString .= "WHERE notification_tbl= " .$id;
+        $condition = "1=1";
+        if ($id != null) {
+            $condition = "notificationId = $id";
         }
-        $data = array();
-        $errmsg = "";
-        $code = 0;
+        $result = $this->getDataByTable("notification_tbl", $condition, $this->pdo);
 
-        try{
-            if($result = $this->pdo->query($sqlString)->fetchAll()){
-                foreach($result as $record){
-                    array_push($data, $record);
-                }
-                $result = null;
-                $code = 200;
-                return array("code"=>$code, "data"=>$data);
-            }
-            else{
-                $errmsg = "No data found.";
-                $code = 403;
-            }
-         }
-         catch(\PDOException $e){
-            $errmsg = $e->getMessage();
-            $code = 403;
+        // Logging the action
+        $this->logger($this->user, 'GET', $id ? "Retrieve notification $id" : "Retrieve all notifications");
+
+        if ($result['code'] == 200) {
+            return $this->generateResponse($result['data'], "Successfully retrieved records", "success", $result['code']);
         }
-        return array("code"=>$code, "errmsg"=>$errmsg);
+        return $this->generateResponse(null, $result['errmsg'], "failed", $result['code']);
      }
      
 }
