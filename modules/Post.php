@@ -10,11 +10,11 @@ class Post extends common{
             $this->pdo = $pdo;
          }
       
-         public function postCycleAndOvulation($body) {
+        public function postCycleAndOvulation($body) {
             try {
                 $values = array_values(array_filter($body, fn($key) => !in_array($key, ['cycleId', 'ovulationId']), ARRAY_FILTER_USE_KEY));
                 list($userid, $cycleStart, $cycleEnd, $cycleLength, $cycleDuration, $flowIntensity) = $values;
-    
+        
                 // Prevent duplicate entries
                 $monthCheckQuery = "SELECT COUNT(*) as count FROM cycle_tbl WHERE userid = :userid AND MONTH(cycleStart) = MONTH(:cycleStart1) AND YEAR(cycleStart) = YEAR(:cycleStart2)";
                 $monthCheckResult = $this->fetchOne($monthCheckQuery, [
@@ -22,64 +22,59 @@ class Post extends common{
                     ':cycleStart1' => $cycleStart,
                     ':cycleStart2' => $cycleStart
                 ]);
-    
+        
                 if ($monthCheckResult['count'] > 0) {
                     $this->logger($userid, 'ERROR', "Duplicate cycle entry for userId $userid in the same month");
                     return ["errmsg" => "A cycle entry for this month already exists.", "code" => 400];
                 }
-    
+        
                 // Insert cycle data
                 $insertCycleQuery = "INSERT INTO cycle_tbl(userid, cycleStart, CycleEnd, cycleLength, cycleDuration, flowIntensity) VALUES (?, ?, ?, ?, ?, ?)";
                 $this->runQuery($insertCycleQuery, $values);
-    
+        
                 // Fetch newly inserted cycleId
                 $cycleId = $this->pdo->lastInsertId();
-    
+        
                 // Calculate predictions
-                $predictedCycleStart = date('Y-m-d', strtotime("$cycleStart + $cycleLength days"));
-                $predictedCycleEnd = date('Y-m-d', strtotime("$predictedCycleStart + $cycleDuration days"));
-                $fertileWindowStart = date('Y-m-d', strtotime("$cycleStart + " . ($cycleLength - 14 - 5) . " days"));
-                $ovulationDate = date('Y-m-d', strtotime("$cycleStart + " . ($cycleLength - 14) . " days"));
-                $nextFertileStart = date('Y-m-d', strtotime("$fertileWindowStart + $cycleLength days"));
-                $predictedOvulationDate = date('Y-m-d', strtotime("$ovulationDate + $cycleLength days"));
-    
+                $predictions = $this->calculatePredictions($cycleStart, $cycleLength, $cycleDuration);
+        
                 // Update cycle predictions
                 $updateCycleQuery = "UPDATE cycle_tbl SET predictedCycleStart = :predictedCycleStart, predictedCycleEnd = :predictedCycleEnd WHERE userid = :userId ORDER BY cycleId DESC LIMIT 1";
                 $this->runQuery($updateCycleQuery, [
-                    ':predictedCycleStart' => $predictedCycleStart,
-                    ':predictedCycleEnd' => $predictedCycleEnd,
+                    ':predictedCycleStart' => $predictions['predictedCycleStart'],
+                    ':predictedCycleEnd' => $predictions['predictedCycleEnd'],
                     ':userId' => $userid
                 ]);
-    
+        
                 // Insert ovulation data
                 $ovulationInsertQuery = "INSERT INTO ovulation_tbl(userId, cycleId, fertile_window_start, ovulationDate) VALUES (:userId, :cycleId, :fertileWindowStart, :ovulationDate)";
                 $this->runQuery($ovulationInsertQuery, [
                     ':userId' => $userid,
                     ':cycleId' => $cycleId,
-                    ':fertileWindowStart' => $fertileWindowStart,
-                    ':ovulationDate' => $ovulationDate
+                    ':fertileWindowStart' => $predictions['fertileWindowStart'],
+                    ':ovulationDate' => $predictions['ovulationDate']
                 ]);
-    
+        
                 // Update ovulation predictions
                 $updateOvulationQuery = "UPDATE ovulation_tbl SET next_fertile_start = :nextFertileStart, predicted_ovulation_date = :predictedOvulationDate WHERE userId = :userId ORDER BY ovulationId DESC LIMIT 1";
                 $this->runQuery($updateOvulationQuery, [
-                    ':nextFertileStart' => $nextFertileStart,
-                    ':predictedOvulationDate' => $predictedOvulationDate,
+                    ':nextFertileStart' => $predictions['nextFertileStart'],
+                    ':predictedOvulationDate' => $predictions['predictedOvulationDate'],
                     ':userId' => $userid
                 ]);
-    
+        
                 $this->logger($userid, 'POST', "New cycle and ovulation entry created for userId $userid");
                 return [
-                    "data" => compact('fertileWindowStart', 'ovulationDate', 'predictedCycleStart', 'predictedCycleEnd', 'nextFertileStart', 'predictedOvulationDate'),
+                    "data" => $predictions,
                     "code" => 200
                 ];
-    
+        
             } catch (PDOException $e) {
                 $errmsg = $e->getMessage();
                 $this->logger($userid ?? 'Unknown', 'ERROR', "SQL Error: $errmsg");
                 return ["errmsg" => $errmsg, "code" => 400];
             }
-        }
+    }
     
         public function postHealth($body) {
             try {
