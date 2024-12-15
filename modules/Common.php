@@ -94,6 +94,17 @@ class Common{
         return round($weight / ($heightInMeters * $heightInMeters), 2);
     }
 
+    protected function calculatePredictions($cycleStart, $cycleLength, $cycleDuration) {
+        $predictedCycleStart = date('Y-m-d', strtotime("$cycleStart + $cycleLength days"));
+        $predictedCycleEnd = date('Y-m-d', strtotime("$predictedCycleStart + $cycleDuration days"));
+        $fertileWindowStart = date('Y-m-d', strtotime("$cycleStart + " . ($cycleLength - 14 - 5) . " days"));
+        $ovulationDate = date('Y-m-d', strtotime("$cycleStart + " . ($cycleLength - 14) . " days"));
+        $nextFertileStart = date('Y-m-d', strtotime("$fertileWindowStart + $cycleLength days"));
+        $predictedOvulationDate = date('Y-m-d', strtotime("$ovulationDate + $cycleLength days"));
+    
+        return compact('predictedCycleStart', 'predictedCycleEnd', 'fertileWindowStart', 'ovulationDate', 'nextFertileStart', 'predictedOvulationDate');
+    }
+
     /*public function postData($tableName, $body, \PDO $pdo){
         $values = [];
         $errmsg = "";
