@@ -63,10 +63,38 @@ class Common{
             "status"=>$status,
             "date_generated" => date_create()
         );
-
     }
 
-    public function postData($tableName, $body, \PDO $pdo){
+    protected function runQuery(string $query, array $params = []) {
+        try {
+            $stmt = $this->pdo->prepare($query);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            $this->logError(null, 'ERROR', "SQL Error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    protected function fetchOne(string $query, array $params = []) {
+        $stmt = $this->runQuery($query, $params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    protected function ensureFieldsExist(array $data, array $requiredFields) {
+        foreach ($requiredFields as $field) {
+            if (!isset($data[$field])) {
+                throw new Exception("Missing required field: $field");
+            }
+        }
+    }
+
+    protected function calculateBMI($height, $weight) {
+        $heightInMeters = $height / 100;
+        return round($weight / ($heightInMeters * $heightInMeters), 2);
+    }
+
+    /*public function postData($tableName, $body, \PDO $pdo){
         $values = [];
         $errmsg = "";
         $code = 0;
@@ -90,6 +118,6 @@ class Common{
             $code = 400;
         }
         return array("errmsg"=>$errmsg, "code"=>$code);
-    }
+    }*/
 }
 ?>
