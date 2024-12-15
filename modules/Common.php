@@ -65,6 +65,20 @@ class Common{
         );
     }
 
+    private function patchData($sqlString, $values) {
+        $errmsg = "";
+        $code = 0;
+        try {
+            $sql = $this->pdo->prepare($sqlString);
+            $sql->execute($values);
+            $code = 200;
+            return ["data" => null, "code" => $code];
+        } catch (\PDOException $e) {
+            $errmsg = $e->getMessage();
+            $code = 400;
+            return ["errmsg" => $errmsg, "code" => $code];
+        }
+    }
     protected function runQuery(string $query, array $params = []) {
         try {
             $stmt = $this->pdo->prepare($query);
