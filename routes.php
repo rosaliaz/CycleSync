@@ -4,8 +4,8 @@
     require_once "./modules/Get.php";
     require_once "./modules/Post.php";
     require_once "./modules/Patch.php";
-    require_once "./modules/Delete.php";
     require_once "./modules/Auth.php";
+    require_once "./modules/common.php";
 
     $db = new Connection();
     $pdo = $db->connect();
@@ -14,7 +14,6 @@
     $post = new Post($pdo);
     $get = new Get($pdo);
     $patch = new Patch($pdo);
-    $delete = new Delete($pdo);
     $auth = new Authentication($pdo);
     
 
@@ -60,12 +59,22 @@
 
                 case "health":
                     if(count($request)>1){
-                        echo json_encode($get->getHealthMetric($request[1]));
+                        echo json_encode($get->getHealth($request[1]));
                     }
                     else{
-                        echo json_encode($get->getHealthMetric());
+                        echo json_encode($get->getHealth());
                     }
                 break;
+
+                case "notification":
+                    if(count($request)>1){
+                        echo json_encode($get->getNotification($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getNotification());
+                    }
+                break;
+
 
                 case "account":
                     if (count($request)>1){
@@ -76,32 +85,19 @@
                     }
                 break;
 
-                case "notifications":
-                    if (count($request)>1){
-                        echo json_encode($get->getNotification($request[1]));
-                    }
-                    else{
-                        echo json_encode($get->getNotification());
-                    }
-                break;
-                
-                case "log":
-                    echo json_encode($get->getLogs($request[1]));
-                break;
-                
                 default:
                     http_response_code(400);
                     echo "Invalid Request Method.";
                 break;
             }
-        }
-        else{
+          }
+         else{
             http_response_code(401);
         }
-        break;
+         break;
 
         case "POST":
-            $body = json_decode(file_get_contents("php://input"), true);
+            $body = json_decode(file_get_contents("php://input"));
             
             // Exempt the "login" endpoint from authorization
             if (in_array($request[0], ["login", "account"])) {
@@ -120,7 +116,7 @@
             // Check authorization for all other POST endpoints
             if ($auth->isAuthorized()) {
                 switch ($request[0]) {
-                    
+                   
                     case "monthly_cycle":
                         echo json_encode($post->postCycleAndOvulation($body));
                         break;
@@ -145,12 +141,12 @@
             } else {
                 http_response_code(401);
                 echo json_encode(["error" => "Unauthorized"]);
-            }
-            break;
+        }
+        break;
         
-
         case "PATCH":
-            $body = json_decode(file_get_contents("php://input"));
+            $body = json_decode(file_get_contents("php://input"),true);
+            if ($auth->isAuthorized()) {
             switch($request[0]){
                 case "cycle":
                     echo json_encode($patch->patchCycle($body, $request[1]));
@@ -160,29 +156,29 @@
                     echo json_encode($patch->patchAccounts($body, $request[1]));
                 break;
 
-            default:
-                http_response_code(400);
-                echo "Invalid Request Method.";
-            break;
-        }
-        break;
+                case "symptoms":
+                    echo json_encode($patch->patchSymptom($body, $request[1]));
+                break;
 
-    case "DELETE":
-        switch($request[0]){
-            case "cycle":
-                echo json_encode($patch->archiveCycle($request[1]));
-            break;
+                case "health":
+                    echo json_encode($patch->patchHealth($body, $request[1]));
+                break;
 
-            case "destroycycle":
-                echo json_encode($delete->deleteCycle($request[1]));
-            break;
+                case "notification":
+                    echo json_encode($patch->patchNotification($body, $request[1]));
+                break;
 
             default:
                 http_response_code(400);
                 echo "Invalid Request Method.";
             break;
         }
-        break;
+         }else {
+            http_response_code(401);
+            echo json_encode(["error" => "Unauthorized"]);
+    }
+     break;
+
 }
 
 ?>
