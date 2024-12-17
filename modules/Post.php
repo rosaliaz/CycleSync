@@ -10,7 +10,7 @@ class Post extends common{
             $this->pdo = $pdo;
          }
       
-        public function postCycleAndOvulation($body) {
+    public function postCycleAndOvulation($body) {
         $values = [];
         $errmsg = "";
         $code = 0;
@@ -199,6 +199,6 @@ class Post extends common{
             $this->logger($username ?? 'Unknown', 'ERROR', "SQL Error: $errmsg");
             return ["errmsg" => $errmsg, "code" => 400];
         }
-     }
-   }
+    }
+}
 ?>
