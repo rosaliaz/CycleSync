@@ -1,12 +1,11 @@
 <?php
-class Common{
-
+class common{
     protected function logger($user, $method, $action){
         // datetime, user, method, action . text file .log
         $filename = date("Y-m-d").".log";
         $datetime = date("Y-m-d H:m:s");
         $logMessage = "$datetime,$method,$user,$action" .PHP_EOL; //PHP EOL concat, new line
-        file_put_contents("./logs/$filename", $logMessage,FILE_APPEND | LOCK_EX); // wo file append, laging overwriting mangyayari sa txt file
+        file_put_contents("./logs/$filename", $logMessage,FILE_APPEND | LOCK_EX); 
     }
 
     private function generateInsertString($tablename,$body){
@@ -65,27 +64,38 @@ class Common{
         );
     }
 
-    private function patchData($sqlString, $values) {
-        $errmsg = "";
-        $code = 0;
+    protected function patchData($table, $body, $idColumn, $id) {
+        if (empty($body)) {
+            return ["errmsg" => "No fields to update", "code" => 400];
+        }
+    
+        // Generate column placeholders dynamically
+        $columns = array_keys($body);
+        $values = array_values($body);
+        $values[] = $id;
+    
+        $placeholders = implode(", ", array_map(fn($col) => "$col=?", $columns));
+        $sqlString = "UPDATE $table SET $placeholders WHERE $idColumn=?";
+    
         try {
             $sql = $this->pdo->prepare($sqlString);
             $sql->execute($values);
-            $code = 200;
-            return ["data" => null, "code" => $code];
+    
+            return ["data" => null, "code" => 200];
         } catch (\PDOException $e) {
-            $errmsg = $e->getMessage();
-            $code = 400;
-            return ["errmsg" => $errmsg, "code" => $code];
+            // Log the error using the logger
+            $this->logger(null, 'ERROR', "Failed to update table $table: " . $e->getMessage());
+            return ["errmsg" => $e->getMessage(), "code" => 400];
         }
-    }
+    }         
+
     protected function runQuery(string $query, array $params = []) {
         try {
             $stmt = $this->pdo->prepare($query);
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            $this->logError(null, 'ERROR', "SQL Error: " . $e->getMessage());
+            $this->logger(null, 'ERROR', "SQL Error: " . $e->getMessage());
             throw $e;
         }
     }
@@ -118,31 +128,6 @@ class Common{
     
         return compact('predictedCycleStart', 'predictedCycleEnd', 'fertileWindowStart', 'ovulationDate', 'nextFertileStart', 'predictedOvulationDate');
     }
-
-    /*public function postData($tableName, $body, \PDO $pdo){
-        $values = [];
-        $errmsg = "";
-        $code = 0;
-
-        foreach($body as $value){
-            array_push($values, $value);
-        }
-
-        try{
-            $sqlString = $this->generateInsertString($tableName,$body);
-            $sql = $pdo->prepare($sqlString);
-            $sql->execute($values);
-
-            $code =200;
-            $data = null;
-
-            return array("data"=>$data, "code"=>$code);
-        }
-        catch(\PDOException $e){
-            $errmsg = $e->getMessage();
-            $code = 400;
-        }
-        return array("errmsg"=>$errmsg, "code"=>$code);
-    }*/
+    
 }
 ?>
