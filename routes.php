@@ -29,6 +29,14 @@
         case "GET":
             if($auth->isAuthorized()){
             switch($request[0]){
+                case "account":
+                    if (count($request)>1){
+                        echo json_encode($get->getAccount($request[1]));
+                    }
+                    else{
+                        echo json_encode($get->getAccount());
+                    }
+                break;
 
                 case "cycle":
                     if (count($request)>1){
@@ -75,16 +83,6 @@
                     }
                 break;
 
-
-                case "account":
-                    if (count($request)>1){
-                        echo json_encode($get->getAccount($request[1]));
-                    }
-                    else{
-                        echo json_encode($get->getAccount());
-                    }
-                break;
-
                 default:
                     http_response_code(400);
                     echo "Invalid Request Method.";
@@ -97,16 +95,21 @@
          break;
 
         case "POST":
-            $body = json_decode(file_get_contents("php://input"));
+            $body = json_decode(file_get_contents("php://input"),true);
+
+            if ($body === null) {
+                http_response_code(400);
+                echo json_encode(["error" => "Invalid JSON input."]);
+                exit;
+            }
             
-            // Exempt the "login" endpoint from authorization
-            if (in_array($request[0], ["login", "account"])) {
+            if (in_array($request[0], ["login", "register"])) {
                 switch ($request[0]) {
                     case "login":
                         echo json_encode($auth->login($body));
                         break;
         
-                    case "account":
+                    case "register":
                         echo json_encode($auth->addAccounts($body));
                         break;
                 }
@@ -166,6 +169,18 @@
 
                 case "notification":
                     echo json_encode($patch->patchNotification($body, $request[1]));
+                break;
+
+                case "delete_notification":
+                    echo json_encode($patch->archiveNotification($request[1]));
+                break;
+
+                case "delete_symptom":
+                    echo json_encode($patch->archiveSymptom($request[1]));
+                break;
+
+                case "delete_health":
+                    echo json_encode($patch->archiveHealth($request[1]));
                 break;
 
             default:
