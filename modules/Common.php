@@ -1,5 +1,15 @@
 <?php
 class common{
+    
+    protected function getUserFromHeaders() {
+        $headers = getallheaders();
+        if (isset($headers['x-auth-user'])) {
+            return $headers['x-auth-user'];
+        }
+        // Fallback if user header is missing
+        return 'unknown_user';
+    }
+
     protected function logger($user, $method, $action){
         // datetime, user, method, action . text file .log
         $filename = date("Y-m-d").".log";
@@ -7,8 +17,8 @@ class common{
         $logMessage = "$datetime,$method,$user,$action" .PHP_EOL; //PHP EOL concat, new line
         file_put_contents("./logs/$filename", $logMessage,FILE_APPEND | LOCK_EX); 
     }
-
-    private function generateInsertString($tablename,$body){
+    
+    protected function generateInsertString($tablename,$body){
         $keys = array_keys($body);
         $fields = implode(",", $keys);
         $parameter_array = [];
@@ -19,6 +29,7 @@ class common{
         $sql = "INSERT INTO $tablename($fields) VALUES($parameters)";
         return $sql;
     }
+
     public function getDataByTable($tableName, $condition, \PDO $pdo){
         $data = array();
         $errmsg = "";
@@ -128,6 +139,103 @@ class common{
     
         return compact('predictedCycleStart', 'predictedCycleEnd', 'fertileWindowStart', 'ovulationDate', 'nextFertileStart', 'predictedOvulationDate');
     }
+
+    protected function getUserIdByUsername($username) {
+        $useridQuery = "SELECT userid FROM accounts WHERE username = :username";
+        $useridResult = $this->fetchOne($useridQuery, [':username' => $username]);
+
+        if (!$useridResult || !$useridResult['userid']) {
+            throw new Exception("Invalid username: $username");
+        }
+
+        return $useridResult['userid'];
+    }
     
+    protected function isDuplicateCycle($userid, $cycleStart) {
+        $monthCheckQuery = "SELECT COUNT(*) as count 
+                            FROM cycle_tbl 
+                            WHERE userid = :userid 
+                              AND MONTH(cycleStart) = MONTH(:cycleStart1) 
+                              AND YEAR(cycleStart) = YEAR(:cycleStart2)";
+
+        $monthCheckResult = $this->fetchOne($monthCheckQuery, [
+            ':userid' => $userid,
+            ':cycleStart1' => $cycleStart,
+            ':cycleStart2' => $cycleStart
+        ]);
+
+        return $monthCheckResult && $monthCheckResult['count'] > 0;
+    }
+
+    protected function insertCycle($userid, $cycleStart, $CycleEnd, $cycleLength, $cycleDuration, $flowIntensity) {
+        $insertQuery = "INSERT INTO cycle_tbl(userid, cycleStart, CycleEnd, cycleLength, cycleDuration, flowIntensity) 
+                        VALUES (?, ?, ?, ?, ?, ?)";
+        $this->runQuery($insertQuery, [$userid, $cycleStart, $CycleEnd, $cycleLength, $cycleDuration, $flowIntensity]);
+
+        $cycleIdQuery = "SELECT LAST_INSERT_ID() as cycleId";
+        $cycleIdResult = $this->fetchOne($cycleIdQuery);
+
+        if (!$cycleIdResult || !$cycleIdResult['cycleId']) {
+            throw new Exception("Failed to retrieve the cycleId of the newly inserted row.");
+        }
+
+        return $cycleIdResult['cycleId'];
+    }
+
+    protected function updateCyclePredictions($predictions, $conditions) {
+        $whereClauses = [];
+        $params = [];
+        $orderByLimit = '';
+    
+        foreach ($conditions as $key => $value) {
+            $whereClauses[] = "$key = :$key";
+            $params[":$key"] = $value;
+        }
+    
+        if (isset($conditions['userid'])) {
+            $orderByLimit = "ORDER BY cycleId DESC LIMIT 1";
+        }
+    
+        $updateQuery = "UPDATE cycle_tbl 
+                        SET predictedCycleStart = :predictedCycleStart, 
+                            predictedCycleEnd = :predictedCycleEnd 
+                        WHERE " . implode(' AND ', $whereClauses) . " $orderByLimit";
+    
+        $params[':predictedCycleStart'] = $predictions['predictedCycleStart'];
+        $params[':predictedCycleEnd'] = $predictions['predictedCycleEnd'];
+    
+        $this->runQuery($updateQuery, $params);
+    }
+
+    protected function insertOvulation($userid, $cycleId, $predictions) {
+        $ovulationInsertQuery = "INSERT INTO ovulation_tbl(userId, cycleId, fertile_window_start, ovulationDate) 
+                                VALUES (:userId, :cycleId, :fertileWindowStart, :ovulationDate)";
+        $this->runQuery($ovulationInsertQuery, [
+            ':userId' => $userid,
+            ':cycleId' => $cycleId,
+            ':fertileWindowStart' => $predictions['fertileWindowStart'],
+            ':ovulationDate' => $predictions['ovulationDate']
+        ]);
+
+        $updateOvulationQuery = "UPDATE ovulation_tbl 
+                                 SET next_fertile_start = :nextFertileStart, 
+                                     predicted_ovulation_date = :predictedOvulationDate 
+                                 WHERE cycleId = :cycleId";
+        $this->runQuery($updateOvulationQuery, [
+            ':nextFertileStart' => $predictions['nextFertileStart'],
+            ':predictedOvulationDate' => $predictions['predictedOvulationDate'],
+            ':cycleId' => $cycleId
+        ]);
+    }
+
+    protected function storeData($tableName, $body, $additionalFields = []) {
+        $data = array_merge($body, $additionalFields);
+        $columns = array_keys($data);
+        $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+        $columnList = implode(', ', $columns);
+    
+        $sqlString = "INSERT INTO $tableName ($columnList) VALUES ($placeholders)";
+        $this->runQuery($sqlString, array_values($data));
+    }    
 }
 ?>
