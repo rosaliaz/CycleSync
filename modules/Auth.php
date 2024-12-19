@@ -1,5 +1,8 @@
 <?php
-class Authentication{
+
+require_once "./modules/common.php";
+
+class Authentication extends common{
 
     protected $pdo;
 
@@ -25,7 +28,7 @@ class Authentication{
         catch(Exception $e){
             echo $e->getMessage();
         }
-       return "";
+       return $token;
     }
 
     public function saveToken($token, $username){
@@ -63,10 +66,7 @@ class Authentication{
         $payload = [ 
             "userId" => $id,
             "user" => $username,
-            "date" => date_create(),
-            "exp" => date("Y-m-d H:i:s"),
-            "email" => "202310799@gordoncollege.edu.ph",
-            "Role" => "Admin"
+            "date" => date_create()
            ];
            return base64_encode(json_encode($payload));
     }
@@ -97,85 +97,87 @@ class Authentication{
         return substr($mb64String, 0, $length);
     }
 
-
-    public function login($body){
-       $username = $body->username;
-       $password = $body->password;
-
-       $code = 0;
-       $payload = "";
-       $remarks = "";
-       $message = "";
-
-        try{
-            $sqlString = "SELECT userId,userName,email,password,token FROM accounts WHERE userName =?";
+    public function login($body) {
+        try {
+            $username = $body['username'];
+            $password = $body['password'];
+    
+            $sqlString = "SELECT userid, userName, email, password, token FROM accounts WHERE userName = ?";
             $stmt = $this->pdo->prepare($sqlString);
             $stmt->execute([$username]);
-
-            if($stmt->rowCount()>0){
-                $result = $stmt->fetchAll()[0];
-                if ($this->isSamePassword($password, $result['password'])){
-                    $code = 200;
-                    $remarks = "success";
-                    $message = "Logged in successfully.";
-                    $token = $this->generateToken($result['userId'], $result['userName']);
-                    $token_arr = explode('.', $token);
-                    $this->saveToken($token_arr[2], $result['userName']);
-                    $payload = array("userId" => $result['userId'], "userName" =>$result['userName'], "token"=>$token_arr[2]);
-
+    
+            if ($stmt->rowCount() > 0) {
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+                if ($this->isSamePassword($password, $result['password'])) {
+                    $token = $this->generateToken($result['userid'], $result['userName']);
+                    $tokenArr = explode('.', $token);
+                    $this->saveToken($tokenArr[2], $result['userName']);
+    
+                    session_start();
+                    $_SESSION['userid'] = $result['userid'];
+                    $_SESSION['userName'] = $result['userName'];
+    
+                    $this->logger($username, 'LOGIN', "User $username logged in successfully.");
+    
+                    return [
+                        "payload" => [
+                            "userid" => $result['userid'],
+                            "userName" => $result['userName'],
+                            "token" => $tokenArr[2]
+                        ],
+                        "remarks" => "success",
+                        "message" => "Logged in successfully.",
+                        "code" => 200
+                    ];
+                } else {
+                    $this->logger($username, 'LOGIN', "Incorrect password for $username.");
+                    return [
+                        "payload" => null,
+                        "remarks" => "failed",
+                        "message" => "Incorrect Password!",
+                        "code" => 401
+                    ];
                 }
-                else{
-                $code = 401;
-                $payload = null;
-                $remarks = "failed";
-                $message = "Incorrect Password!";    
-                }
-                
+            } else {
+                $this->logger($username, 'LOGIN', "Username $username does not exist.");
+                return [
+                    "payload" => null,
+                    "remarks" => "failed",
+                    "message" => "Username does not exist.",
+                    "code" => 401
+                ];
             }
-            else{
-                $code = 401;
-                $payload = null;
-                $remarks = "failed";
-                $message = "Username does not exist.";         
-            }       
-         }
-
-        catch(\PDOException $e){
+        } catch (PDOException $e) {
             $errmsg = $e->getMessage();
-            $code = 400;
+            $this->logger(null, 'ERROR', "Login failed: $errmsg");
+            return ["errmsg" => $errmsg, "code" => 400];
         }
-
-        return array("payload"=> $payload, "remarks" => $remarks, "message" =>$message, "code" =>$code);        
     }
-
-    public function addAccounts($body){
-        $values = [];
-        $errmsg = "";
-        $code = 0;
-
-        $body->password = $this->encryptPassword($body->password);
-
-        foreach($body as $value){
-            array_push($values, $value);
-        }
-
-        try{
-            $sqlString = "INSERT INTO accounts(userName, email, password) VALUES (?,?,?)";
-            $sql = $this->pdo->prepare($sqlString);
-            $sql->execute($values);
-
-            $code = 200;
-            $data = null;
-
-            return array("data"=>$data, "code"=>$code);
-        }
-        catch (\PDOException $e){
+    
+    public function addAccounts($body) {
+        try {
+            $this->ensureFieldsExist($body, ['username', 'password', 'email']);
+    
+            $password = $this->encryptPassword($body['password']);
+            $values = [
+                $body['username'],
+                $body['email'],
+                $password
+            ];
+    
+            $sqlString = "INSERT INTO accounts(userName, email, password) VALUES (?, ?, ?)";
+            $this->runQuery($sqlString, $values);
+    
+            $this->logger($body['username'], 'POST', "New account created for username {$body['username']}");
+            return ["message" => "Account created successfully.", "code" => 200];
+    
+        } catch (PDOException $e) {
             $errmsg = $e->getMessage();
-            $code = 400;
+            $this->logger(null, 'ERROR', "Account creation failed: $errmsg");
+            return ["errmsg" => $errmsg, "code" => 400];
         }
-
-        return array("errmsg"=>$errmsg, "code"=>$code);
     }
-
+    
 }
 ?>
