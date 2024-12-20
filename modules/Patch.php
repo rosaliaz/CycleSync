@@ -133,22 +133,41 @@ class Patch extends common{
             return ["errmsg" => $e->getMessage(), "code" => 400];
         }
     }
-    
 
     public function archiveSymptom($id) {
+        $id = (int)$id;
         $sqlString = "UPDATE symptom_tbl SET isDeleted=1 WHERE symptomId=?";
-        return $this->runQuery($sqlString, [$id]);
-    }
-
-    public function archiveHealth($id) {
-        $sqlString = "UPDATE health_metric SET isDeleted=1 WHERE metricId=?";
-        return $this->runQuery($sqlString, [$id]);
-    }
-
-    public function archiveNotification($id) {
-        $sqlString = "UPDATE notification_tbl SET isDeleted=1 WHERE notificationId=?";
-        return $this->runQuery($sqlString, [$id]);
+        $result = $this->runQuery($sqlString, [$id]);
+    
+        if ($result->rowCount() > 0) {
+            return ["message" => "Symptom Data archived successfully.", "code" => 200];
+        } else {
+            return ["message" => "No symptom found to archive.", "code" => 404];
+        }
     }
     
+    public function archiveHealth($id) {
+        $id = (int)$id;
+        $sqlString = "UPDATE health_metric SET isDeleted=1 WHERE metricId=?";
+        $result = $this->runQuery($sqlString, [$id]);
+    
+        if ($result->rowCount() > 0) {
+            return ["message" => "Health metric Data archived successfully.", "code" => 200];
+        } else {
+            return ["message" => "No health metric found to archive.", "code" => 404];
+        }
+    }
+    
+    public function archiveNotification($id) {
+        $id = (int)$id;
+        $sqlString = "UPDATE notification_tbl SET isDeleted=1 WHERE notificationId=?";
+        $result = $this->runQuery($sqlString, [$id]);
+    
+        if ($result->rowCount() > 0) {
+            return ["message" => "Notification Data archived successfully.", "code" => 200];
+        } else {
+            return ["message" => "No notification found to archive.", "code" => 404];
+        }
+    } 
 }
 ?>
