@@ -35,6 +35,7 @@ class common{
         $errmsg = "";
         $code = 0;
 
+        $condition .= " AND isDeleted = 0";
         $sqlString = "SELECT * FROM $tableName WHERE $condition";
 
         // retrieve records
@@ -79,8 +80,14 @@ class common{
         if (empty($body)) {
             return ["errmsg" => "No fields to update", "code" => 400];
         }
-    
-        // Generate column placeholders dynamically
+
+        $checkQuery = "SELECT COUNT(*) as count FROM $table WHERE $idColumn = ? AND isDeleted = 0";
+        $checkResult = $this->fetchOne($checkQuery, [$id]);
+
+        if (!$checkResult || $checkResult['count'] === 0) {
+            return ["errmsg" => "Cannot update archived data.", "code" => 403];
+        }
+
         $columns = array_keys($body);
         $values = array_values($body);
         $values[] = $id;
@@ -99,6 +106,39 @@ class common{
             return ["errmsg" => $e->getMessage(), "code" => 400];
         }
     }         
+
+    protected function processPostRequest($body, $tableName, $requiredFields, $dataCallback, $logMessage) {
+        try {
+            $this->ensureFieldsExist($body, $requiredFields);
+    
+            $username = $body['username'];
+            unset($body['username']); // Remove username for insertion
+    
+            // Get user ID by username
+            $userid = $this->getUserIdByUsername($username);
+            $body['userid'] = $userid; // Add userid to the data
+    
+            // Apply any additional data transformations
+            if ($dataCallback !== null) {
+                $body = $dataCallback($body);
+            }
+    
+            // Insert data into the specified table
+            $this->storeData($tableName, $body);
+    
+            // Log the successful action
+            $this->logger($username, 'POST', "$logMessage for username $username");
+            return ["data" => null, "code" => 200];
+        } catch (PDOException $e) {
+            $errmsg = $e->getMessage();
+            $this->logger($username ?? 'Unknown', 'ERROR', "SQL Error: $errmsg");
+            return ["errmsg" => $errmsg, "code" => 400];
+        } catch (Exception $e) {
+            $errmsg = $e->getMessage();
+            $this->logger($username ?? 'Unknown', 'ERROR', "General Error: $errmsg");
+            return ["errmsg" => $errmsg, "code" => 400];
+        }
+    }
 
     protected function runQuery(string $query, array $params = []) {
         try {
