@@ -107,7 +107,7 @@ class common{
         }
     }         
 
-    protected function processPostRequest($body, $tableName, $requiredFields, $dataCallback, $logMessage) {
+    protected function processPostRequest($body, $tableName, $requiredFields, $dataCallback, $logCallback) {
         try {
             $this->ensureFieldsExist($body, $requiredFields);
     
@@ -126,8 +126,11 @@ class common{
             // Insert data into the specified table
             $this->storeData($tableName, $body);
     
-            // Log the successful action
-            $this->logger($username, 'POST', "$logMessage for username $username");
+            // Execute the log callback if provided
+            if (is_callable($logCallback)) {
+                $logCallback($username);
+            }
+    
             return ["data" => null, "code" => 200];
         } catch (PDOException $e) {
             $errmsg = $e->getMessage();
@@ -138,7 +141,7 @@ class common{
             $this->logger($username ?? 'Unknown', 'ERROR', "General Error: $errmsg");
             return ["errmsg" => $errmsg, "code" => 400];
         }
-    }
+    }    
 
     protected function runQuery(string $query, array $params = []) {
         try {
@@ -245,6 +248,20 @@ class common{
         $params[':predictedCycleEnd'] = $predictions['predictedCycleEnd'];
     
         $this->runQuery($updateQuery, $params);
+    }
+
+    protected function updateOvulationPredictions($predictions, $cycleId) {
+        $this->runQuery(
+            "UPDATE ovulation_tbl 
+             SET next_fertile_start = :nextFertileStart, 
+                 predicted_ovulation_date = :predictedOvulationDate 
+             WHERE cycleId = :cycleId",
+            [
+                ':nextFertileStart' => $predictions['nextFertileStart'],
+                ':predictedOvulationDate' => $predictions['predictedOvulationDate'],
+                ':cycleId' => $cycleId
+            ]
+        );
     }
 
     protected function insertOvulation($userid, $cycleId, $predictions) {
