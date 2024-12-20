@@ -68,16 +68,16 @@ class Patch extends common{
 
     public function patchCycle($body, $id) {
         try {
-            // Use patchTable to dynamically update the cycle_tbl
+            // Update the cycle_tbl using patchData
             $updateResult = $this->patchData('cycle_tbl', $body, 'cycleid', $id);
     
             if ($updateResult['code'] !== 200) {
                 return $updateResult; // Return if update fails
             }
     
-            // Fetch updated cycle data using fetchOne
+            // Fetch the updated cycle data
             $cycle = $this->fetchOne(
-                "SELECT userid, cycleStart, cycleLength, cycleDuration FROM cycle_tbl WHERE cycleid = ?", 
+                "SELECT userid, cycleStart, cycleLength, cycleDuration FROM cycle_tbl WHERE cycleid = ?",
                 [$id]
             );
     
@@ -87,36 +87,16 @@ class Patch extends common{
     
             // Recalculate predictions
             $predictions = $this->calculatePredictions(
-                $cycle['cycleStart'], 
-                $cycle['cycleLength'], 
+                $cycle['cycleStart'],
+                $cycle['cycleLength'],
                 $cycle['cycleDuration']
             );
     
-            // Update predictions in cycle_tbl
-            $this->runQuery(
-                "UPDATE cycle_tbl 
-                 SET predictedCycleStart = :predictedCycleStart, 
-                     predictedCycleEnd = :predictedCycleEnd 
-                 WHERE cycleid = :cycleId", 
-                [
-                    ':predictedCycleStart' => $predictions['predictedCycleStart'],
-                    ':predictedCycleEnd' => $predictions['predictedCycleEnd'],
-                    ':cycleId' => $id
-                ]
-            );
+            // Update cycle predictions
+            $this->updateCyclePredictions($predictions, ['cycleid' => $id]);
     
-            // Update predictions in ovulation_tbl
-            $this->runQuery(
-                "UPDATE ovulation_tbl 
-                 SET next_fertile_start = :nextFertileStart, 
-                     predicted_ovulation_date = :predictedOvulationDate 
-                 WHERE cycleId = :cycleId", 
-                [
-                    ':nextFertileStart' => $predictions['nextFertileStart'],
-                    ':predictedOvulationDate' => $predictions['predictedOvulationDate'],
-                    ':cycleId' => $id
-                ]
-            );
+            // Update ovulation predictions
+            $this->updateOvulationPredictions($predictions, $id);
     
             // Log the successful update
             $this->logger($cycle['userid'], 'PATCH', "Cycle and predictions updated for cycleId $id");
