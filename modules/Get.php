@@ -83,7 +83,7 @@ class Get extends Common {
     public function getSymptom($id = null){
         $condition = "1=1";
         if ($id != null) {
-            $condition = "userid = $id";
+            $condition = "userid = $id && isDeleted=0";
         }
         $result = $this->getDataByTable("symptom_tbl", $condition, $this->pdo);
 
@@ -99,7 +99,7 @@ class Get extends Common {
     public function getHealth($id = null){
         $condition = "1=1";
         if ($id != null) {
-            $condition = "userid = $id";
+            $condition = "userid = $id && isDeleted=0";
         }
         $result = $this->getDataByTable("health_metric", $condition, $this->pdo);
 
@@ -115,7 +115,7 @@ class Get extends Common {
     public function getNotification($id = null){
         $condition = "1=1";
         if ($id != null) {
-            $condition = "userid = $id";
+            $condition = "userid = $id && isDeleted=0";
         }
         $result = $this->getDataByTable("notification_tbl", $condition, $this->pdo);
 
